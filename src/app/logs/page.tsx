@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth-helper";
 import { prisma } from "@/lib/prisma";
 import LogsClient from "./logs-client";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 

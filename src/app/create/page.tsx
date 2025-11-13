@@ -1,5 +1,6 @@
 import RoleGuard from "@/components/role-guard";
 import CreateMemberForm from "./create-member-form";
+import { authOptions } from "@/lib/auth";
 import BackToDashboard from "@/components/back-to-dashboard";
 
 export const dynamic = "force-dynamic";

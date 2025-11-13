@@ -1,6 +1,10 @@
+// src/lib/auth-helper.ts
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions, requireAdmin } from "./auth";
+import { authOptions } from "@/lib/auth";
 
-export async function auth() {
-  return await getServerSession(authOptions);
+export function getAuthSession() {
+  return getServerSession(authOptions);
 }
+
+export { requireAdmin };

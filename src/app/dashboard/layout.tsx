@@ -1,5 +1,6 @@
 import Protected from "@/components/protected";
 import Navbar from "@/components/navbar";
+import { authOptions } from "@/lib/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
