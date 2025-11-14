@@ -8,7 +8,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!session?.user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {
     const { segment, tier, to, subject, body } = await req.json();
@@ -16,19 +17,24 @@ export async function POST(req: Request) {
     let recipients: string[] = [];
 
     if (segment === "individual") {
-      if (!to) return NextResponse.json({ error: "Missing recipient" }, { status: 400 });
+      if (!to)
+        return NextResponse.json({ error: "Missing recipient" }, { status: 400 });
+
       recipients = [to];
     } else {
+      // Bulk selection
       const members = await prisma.member.findMany({
         where: tier === "all" ? {} : { tier: tier.toUpperCase() },
         select: { email: true },
       });
-      recipients = members.map(m => m.email);
+
+      // FIX: add explicit type for "m"
+      recipients = members.map((m: { email: string }) => m.email);
     }
 
     // Send emails via Resend
     const results = await Promise.allSettled(
-      recipients.map(email =>
+      recipients.map((email) =>
         resend.emails.send({
           from: "The Globe in Pattaya <info@theglobeasia.com>",
           to: email,
@@ -38,24 +44,27 @@ export async function POST(req: Request) {
       )
     );
 
-    const successCount = results.filter(r => r.status === "fulfilled").length;
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
 
     // Log the send in Prisma
     await prisma.emailLog.create({
       data: {
         to: segment === "individual" ? to : "bulk",
         subject,
-        body,
-        count: successCount,
         tier: tier.toUpperCase(),
+        count: successCount,
         sentAt: new Date(),
         userId: session.user.id,
+        // body NOT logged because schema does not support it
       },
     });
 
     return NextResponse.json({ ok: true, count: successCount });
   } catch (e: any) {
     console.error(e);
-    return NextResponse.json({ error: e.message || "Send failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: e.message || "Send failed" },
+      { status: 500 }
+    );
   }
 }
