@@ -6,15 +6,25 @@ import LogsClient from "./logs-client";
 
 export const dynamic = "force-dynamic";
 
+// Minimal shape for the log we use here
+type LogWithRelations = {
+  id: number;
+  to: string;
+  subject: string;
+  tier: string;
+  count: number;
+  sentAt: Date;
+  user: { name: string | null } | null;
+  member: { name: string | null; tier: string | null } | null;
+};
+
 export default async function LogsPage() {
-  // Use central NextAuth config
   const session = await getAuthSession();
 
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || (session.user as any).role !== "ADMIN") {
     redirect("/signin");
   }
 
-  // Fetch logs from Prisma
   const logs = await prisma.emailLog.findMany({
     include: {
       user: { select: { name: true } },
@@ -23,8 +33,7 @@ export default async function LogsPage() {
     orderBy: { sentAt: "desc" },
   });
 
-  // Shape into rows expected by logs-client
-  const rows = logs.map((log) => ({
+  const rows = logs.map((log: LogWithRelations) => ({
     id: log.id,
     to: log.to,
     subject: log.subject,
