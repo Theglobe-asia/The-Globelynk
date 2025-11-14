@@ -1,15 +1,20 @@
+// src/app/logs/page.tsx
 import { redirect } from "next/navigation";
-import { getAuthSession, requireAdmin } from "@/lib/auth-helper";
 import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/auth";
 import LogsClient from "./logs-client";
-import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function LogsPage() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") redirect("/signin");
+  // Use central NextAuth config
+  const session = await getAuthSession();
 
+  if (!session?.user || session.user.role !== "ADMIN") {
+    redirect("/signin");
+  }
+
+  // Fetch logs from Prisma
   const logs = await prisma.emailLog.findMany({
     include: {
       user: { select: { name: true } },
@@ -18,15 +23,17 @@ export default async function LogsPage() {
     orderBy: { sentAt: "desc" },
   });
 
-  const rows = logs.map((l) => ({
-    id: l.id,
-    to: l.to,
-    subject: l.subject ?? "",
-    status: l.status ?? "SENT",
-    tier: l.member?.tier ?? "UNKNOWN",
-    userName: l.user?.name ?? "",
-    memberName: l.member?.name ?? "",
-    createdAt: l.createdAt,
+  // Shape into rows expected by logs-client
+  const rows = logs.map((log) => ({
+    id: log.id,
+    to: log.to,
+    subject: log.subject,
+    tier: log.tier,
+    count: log.count,
+    sentAt: log.sentAt,
+    userName: log.user?.name ?? "Unknown",
+    memberName: log.member?.name ?? null,
+    memberTier: log.member?.tier ?? null,
   }));
 
   return <LogsClient rows={rows} />;
