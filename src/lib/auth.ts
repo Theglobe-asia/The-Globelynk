@@ -25,13 +25,12 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
 
-        // We know our User model has `role`
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
-        } as any;
+        };
       },
     }),
   ],
@@ -44,25 +43,53 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
   },
 };
 
+// Helper to get session on server
 export function getAuthSession() {
   return getServerSession(authOptions);
 }
 
+// Middleware for admin-only routes
 export async function requireAdmin() {
   const session = await getAuthSession();
-  const role = (session?.user as any)?.role;
-  if (role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     throw new Error("Unauthorized");
   }
   return session;
+}
+
+/* -------------------------------------------------------------
+   NextAuth TypeScript Module Augmentation (Fixes all build errors)
+-------------------------------------------------------------- */
+declare module "next-auth" {
+  interface User {
+    id: string;
+    role: string;
+  }
+
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+      name: string | null;
+      email: string | null;
+    };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: string;
+  }
 }
