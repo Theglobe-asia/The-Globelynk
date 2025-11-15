@@ -16,5 +16,11 @@ export default function MembersPage() {
 }
 
 function NoAccess() {
-  return <RoleGuard ability="manageMembers" /> as any;
+  // RoleGuard requires children, so we give it a fallback node
+  return (
+    <RoleGuard ability="manageMembers">
+      <div />
+    </RoleGuard>
+  );
 }
+
