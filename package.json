@@ -8,8 +8,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "prisma:seed": "node prisma/seed.js",
-    "postinstall": "prisma generate"
+    "prisma:seed": "node prisma/seed.js"
   },
 
   "dependencies": {
