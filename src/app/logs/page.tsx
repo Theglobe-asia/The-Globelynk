@@ -40,9 +40,9 @@ export default async function LogsPage() {
     tier: log.tier,
     count: log.count,
     sentAt: log.sentAt,
-    userName: log.user?.name ?? "Unknown",
-    memberName: log.member?.name ?? null,
-    memberTier: log.member?.tier ?? null,
+    userName: log.user?.name || "Unknown",
+    memberName: log.member?.name || null,
+    memberTier: log.member?.tier || null,
   }));
 
   return <LogsClient rows={rows} />;

@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -59,9 +59,8 @@ model EmailLog {
   count   Int
   sentAt  DateTime @default(now())
 
-  // Correct relation types (String for foreign keys)
-  userId String?
-  user   User?   @relation("UserEmails", fields: [userId], references: [id])
+  userId  String?
+  user    User?    @relation("UserEmails", fields: [userId], references: [id])
 
   memberId String?
   member   Member? @relation("MemberEmails", fields: [memberId], references: [id])
