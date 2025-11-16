@@ -1,48 +1,34 @@
-// src/app/logs/page.tsx
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/auth";
-import LogsClient from "./logs-client";
-
-export const dynamic = "force-dynamic";
-
-// Minimal shape for the log we use here
-type LogWithRelations = {
-  id: number;
-  to: string;
-  subject: string;
-  tier: string;
-  count: number;
-  sentAt: Date;
-  user: { name: string | null } | null;
-  member: { name: string | null; tier: string | null } | null;
-};
+import LogsClient, { EmailLogRow } from "./logs-client";
+import { getAuthSession } from "@/lib/auth-helper";
+import { redirect } from "next/navigation";
 
 export default async function LogsPage() {
   const session = await getAuthSession();
-
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
-    redirect("/signin");
-  }
+  if (!session?.user || session.user.role !== "ADMIN") redirect("/signin");
 
   const logs = await prisma.emailLog.findMany({
-    include: {
-      user: { select: { name: true } },
-      member: { select: { name: true, tier: true } },
-    },
     orderBy: { sentAt: "desc" },
+    include: {
+      user: true,
+      member: true,
+    },
   });
 
-  const rows = logs.map((log: LogWithRelations) => ({
+  // Map to EmailLogRow including required fields
+  const rows: EmailLogRow[] = logs.map((log) => ({
     id: log.id,
     to: log.to,
     subject: log.subject,
     tier: log.tier,
     count: log.count,
     sentAt: log.sentAt,
-    userName: log.user?.name || "Unknown",
-    memberName: log.member?.name || null,
-    memberTier: log.member?.tier || null,
+    createdAt: log.sentAt,     // required by EmailLogRow
+    status: "sent",            // static OK value
+
+    userName: log.user?.name ?? "Unknown",
+    memberName: log.member?.name ?? null,
+    memberTier: log.member?.tier ?? null,
   }));
 
   return <LogsClient rows={rows} />;
