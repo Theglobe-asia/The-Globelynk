@@ -16,14 +16,14 @@ export default async function LogsPage() {
   });
 
   const rows: EmailLogRow[] = logs.map((log) => ({
-    id: String(log.id),                  // FIXED — EmailLogRow requires string
+    id: String(log.id),
     to: log.to,
     subject: log.subject,
     tier: log.tier,
     count: log.count,
     sentAt: log.sentAt,
     createdAt: log.sentAt,
-    status: "sent",
+    status: "SENT",                   // FIXED — must be uppercase to match EmailLogRow type
 
     userName: log.user?.name ?? "Unknown",
     memberName: log.member?.name ?? null,
