@@ -15,16 +15,15 @@ export default async function LogsPage() {
     },
   });
 
-  // Map to EmailLogRow including required fields
   const rows: EmailLogRow[] = logs.map((log) => ({
-    id: log.id,
+    id: String(log.id),                  // FIXED — EmailLogRow requires string
     to: log.to,
     subject: log.subject,
     tier: log.tier,
     count: log.count,
     sentAt: log.sentAt,
-    createdAt: log.sentAt,     // required by EmailLogRow
-    status: "sent",            // static OK value
+    createdAt: log.sentAt,
+    status: "sent",
 
     userName: log.user?.name ?? "Unknown",
     memberName: log.member?.name ?? null,
