@@ -45,7 +45,7 @@ export default function SendPage() {
   const [status, setStatus] = useState("");
 
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("none");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
@@ -244,7 +244,7 @@ export default function SendPage() {
       {mode === "individual" && (
         <div>
           <label className="text-sm">Member</label>
-          <Select value={selected} onValueChange={(v) => setSelected(v)}>
+          <Select value={selected || undefined} onValueChange={(v) => setSelected(v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -276,7 +276,10 @@ export default function SendPage() {
             value={selectedTemplateId}
             onValueChange={(id) => {
               setSelectedTemplateId(id);
-              if (!id) return;
+              if (id === "none") {
+                // Clear only the selection, keep current subject/body
+                return;
+              }  
               const t = templates.find((t) => t.id === id);
               if (t) {
                 setSubject(t.subject);
@@ -288,7 +291,7 @@ export default function SendPage() {
               <SelectValue placeholder="No template" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No template</SelectItem>
+              <SelectItem value="none">No template</SelectItem>
               {templates.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.name}
