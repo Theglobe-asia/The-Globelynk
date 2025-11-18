@@ -19,15 +19,33 @@ export default function CreateMemberForm() {
   const [tier, setTier] = useState<Tier>("BASIC");
   const [status, setStatus] = useState("");
 
+  // Full client-side validation to match server rules
+  function isValidEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!isValidEmail(email)) {
+      setStatus("Invalid email format");
+      return;
+    }
+
     setStatus("Saving...");
+
     const res = await fetch("/api/members", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, tier }),
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        tier,
+      }),
     });
+
     const data = await res.json().catch(() => ({}));
+
     if (res.ok) {
       setStatus("Saved successfully");
       setName("");
@@ -42,7 +60,11 @@ export default function CreateMemberForm() {
     <form onSubmit={handleSubmit} className="grid max-w-md gap-4">
       <div>
         <label className="text-sm">Full Name</label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
       </div>
 
       <div>
@@ -51,6 +73,11 @@ export default function CreateMemberForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          className={
+            email.length > 0 && !isValidEmail(email)
+              ? "border-red-500"
+              : ""
+          }
           required
         />
       </div>
@@ -69,7 +96,14 @@ export default function CreateMemberForm() {
         </Select>
       </div>
 
-      <Button type="submit" className="btn-gold">Create</Button>
+      <Button
+        type="submit"
+        className="btn-gold"
+        disabled={!name.trim() || !isValidEmail(email)}
+      >
+        Create
+      </Button>
+
       {status && <p className="text-sm text-gray-500">{status}</p>}
     </form>
   );
