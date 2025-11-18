@@ -4,16 +4,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-interface Params {
-  params: { id: string };
-}
-
-export async function GET(req: Request, { params }: Params) {
+export async function GET(
+  req: Request,
+  context: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { id } = params;
+  const { id } = context.params;
 
   const rows = await prisma.$queryRaw<
     { id: string; name: string; subject: string; body: string }[]
@@ -26,12 +25,15 @@ export async function GET(req: Request, { params }: Params) {
   return NextResponse.json(rows[0]);
 }
 
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(
+  req: Request,
+  context: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { id } = params;
+  const { id } = context.params;
 
   await prisma.$executeRaw`
     delete from "EmailTemplate"
