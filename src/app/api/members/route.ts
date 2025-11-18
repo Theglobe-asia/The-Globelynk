@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// GET: list members (used by Send page)
+/* ---------------------------
+   GET: List members
+---------------------------- */
 export async function GET() {
   const members = await prisma.member.findMany({
     select: { id: true, name: true, email: true, tier: true, joinedAt: true },
@@ -12,7 +14,9 @@ export async function GET() {
   return NextResponse.json(members);
 }
 
-// POST: create a member
+/* ---------------------------
+   POST: Create member
+---------------------------- */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role ?? "VIEWER";
@@ -22,23 +26,67 @@ export async function POST(req: Request) {
 
   try {
     const { name, email, tier } = await req.json();
-    if (!name || !email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
-    }
-    const validTiers = new Set(["BASIC", "SILVER", "GOLD"]);
-    const t = validTiers.has(String(tier)) ? String(tier) : "BASIC";
 
+    /* -----------------------------------
+       Email required + validated format
+    ------------------------------------ */
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: "Name and email are required" },
+        { status: 400 }
+      );
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Reject blank or empty emails
+    if (trimmedEmail.length === 0) {
+      return NextResponse.json(
+        { error: "Email cannot be empty" },
+        { status: 400 }
+      );
+    }
+
+    // Full email regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    /* -----------------------------------
+       Validate tier
+    ------------------------------------ */
+    const validTiers = new Set(["BASIC", "SILVER", "GOLD"]);
+    const finalTier = validTiers.has(String(tier)) ? String(tier) : "BASIC";
+
+    /* -----------------------------------
+       Create member
+    ------------------------------------ */
     const created = await prisma.member.create({
-      data: { name, email, tier: t as any },
+      data: {
+        name,
+        email: trimmedEmail,
+        tier: finalTier as any,
+      },
       select: { id: true, name: true, email: true, tier: true, joinedAt: true },
     });
 
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {
-    // Unique email guard
+    // Prisma unique constraint
     if (e?.code === "P2002") {
-      return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Email already exists" },
+        { status: 409 }
+      );
     }
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }
