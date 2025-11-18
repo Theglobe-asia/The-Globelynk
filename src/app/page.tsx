@@ -9,7 +9,7 @@ export default function Home() {
       <div className="w-full max-w-3xl mx-auto text-center space-y-8">
         <CoverAvatar />
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight">
-          Elixir
+          Elizabeth
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground">
           CRM Developed by Chef Alex
