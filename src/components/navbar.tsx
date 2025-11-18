@@ -17,7 +17,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
       <div className="max-w-6xl mx-auto flex items-center justify-between p-3">
-        <Link href="/dashboard" className="font-semibold">GlobeLynk</Link>
+        <Link href="/dashboard" className="font-semibold">Elizabeth</Link>
         <nav className="flex gap-3">
           {links.map(l => (
             <Link key={l.href}
