@@ -330,10 +330,7 @@ export default function SendPage() {
       {mode === "individual" && (
         <div>
           <label className="text-sm">Member</label>
-          <Select
-            value={selected || undefined}
-            onValueChange={(v) => setSelected(v)}
-          >
+          <Select value={selected || undefined} onValueChange={(v) => setSelected(v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -416,18 +413,18 @@ export default function SendPage() {
         onChange={(e) => setBody(e.target.value)}
       />
 
+      {/* Attachments — Enhanced UI */}
       <div>
         <label className="text-sm">Attachments</label>
 
-        {/* ✅ UPDATED BLOCK — FILE SIZE LIMIT ADDED */}
         <Input
           type="file"
           multiple
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
 
-            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
-            const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total
+            const MAX_FILE_SIZE = 5 * 1024 * 1024;
+            const MAX_TOTAL_SIZE = 10 * 1024 * 1024;
 
             let total = 0;
             const valid: File[] = [];
@@ -459,10 +456,57 @@ export default function SendPage() {
           }}
         />
 
+        {/* Attachment List UI */}
         {attachments.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {attachments.length} file(s) selected
-          </p>
+          <div className="mt-3 space-y-2">
+            {attachments.map((file, i) => {
+              const isImage = file.type.startsWith("image/");
+              const isPdf = file.type === "application/pdf";
+              const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+              return (
+                <div
+                  key={i}
+                  className="flex items-center justify-between border rounded-md p-2 bg-neutral-50"
+                >
+                  <div className="flex items-center gap-3">
+                    {isImage ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt="preview"
+                        className="w-12 h-12 rounded object-cover border"
+                      />
+                    ) : isPdf ? (
+                      <div className="w-12 h-12 flex items-center justify-center bg-red-100 text-red-600 font-semibold rounded">
+                        PDF
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center bg-neutral-200 text-neutral-600 rounded">
+                        FILE
+                      </div>
+                    )}
+
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{file.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {sizeMB} MB
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      setAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
