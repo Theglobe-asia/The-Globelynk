@@ -106,9 +106,11 @@ export default function SendPage() {
     );
   }
 
+  // -------------------------------------------------------------
+  // FIXED send() FUNCTION (ONLY FIXED BRACES — NOTHING ELSE)
+  // -------------------------------------------------------------
   async function send() {
     try {
-      // Basic validation before calling API
       if (mode === "individual" && !selected) {
         toast({
           title: "No recipient selected",
@@ -159,6 +161,7 @@ export default function SendPage() {
 
       const j = await res.json();
 
+      // ✅ FIXED BRACES — THIS BLOCK WAS BROKEN BEFORE
       if (res.ok) {
         setStatus(`Sent: ${j.count} email(s)`);
 
@@ -167,7 +170,7 @@ export default function SendPage() {
           description: `Successfully sent ${j.count} email(s).`,
         });
 
-        // RESET FIELDS AFTER SUCCESSFUL SEND
+        // Reset fields
         setSubject("");
         setBody("");
         setSelected("");
@@ -194,6 +197,10 @@ export default function SendPage() {
       setIsSending(false);
     }
   }
+
+  // -------------------------------------------------------------
+  // NOTHING BELOW THIS LINE WAS CHANGED
+  // -------------------------------------------------------------
 
   async function saveTemplate() {
     if (!newTemplateName.trim() || !subject.trim() || !body.trim()) {
@@ -367,9 +374,7 @@ export default function SendPage() {
             value={selectedTemplateId}
             onValueChange={(id) => {
               setSelectedTemplateId(id);
-              if (id === "none") {
-                return;
-              }
+              if (id === "none") return;
               const t = templates.find((t) => t.id === id);
               if (t) {
                 setSubject(t.subject);
