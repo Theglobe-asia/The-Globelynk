@@ -330,7 +330,10 @@ export default function SendPage() {
       {mode === "individual" && (
         <div>
           <label className="text-sm">Member</label>
-          <Select value={selected || undefined} onValueChange={(v) => setSelected(v)}>
+          <Select
+            value={selected || undefined}
+            onValueChange={(v) => setSelected(v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -413,7 +416,7 @@ export default function SendPage() {
         onChange={(e) => setBody(e.target.value)}
       />
 
-      {/* Attachments — Enhanced UI */}
+      {/* Attachments — enhanced UI, grid layout */}
       <div>
         <label className="text-sm">Attachments</label>
 
@@ -423,8 +426,8 @@ export default function SendPage() {
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
 
-            const MAX_FILE_SIZE = 5 * 1024 * 1024;
-            const MAX_TOTAL_SIZE = 10 * 1024 * 1024;
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+            const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total
 
             let total = 0;
             const valid: File[] = [];
@@ -456,9 +459,8 @@ export default function SendPage() {
           }}
         />
 
-        {/* Attachment List UI */}
         {attachments.length > 0 && (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {attachments.map((file, i) => {
               const isImage = file.type.startsWith("image/");
               const isPdf = file.type === "application/pdf";
@@ -467,27 +469,29 @@ export default function SendPage() {
               return (
                 <div
                   key={i}
-                  className="flex items-center justify-between border rounded-md p-2 bg-neutral-50"
+                  className="border rounded-lg p-3 bg-neutral-50 flex flex-col gap-2 h-full justify-between"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-2">
                     {isImage ? (
                       <img
                         src={URL.createObjectURL(file)}
                         alt="preview"
-                        className="w-12 h-12 rounded object-cover border"
+                        className="w-full h-24 rounded object-cover border"
                       />
                     ) : isPdf ? (
-                      <div className="w-12 h-12 flex items-center justify-center bg-red-100 text-red-600 font-semibold rounded">
+                      <div className="w-full h-24 flex items-center justify-center bg-red-100 text-red-600 font-semibold rounded">
                         PDF
                       </div>
                     ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-neutral-200 text-neutral-600 rounded">
+                      <div className="w-full h-24 flex items-center justify-center bg-neutral-200 text-neutral-600 rounded">
                         FILE
                       </div>
                     )}
 
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">{file.name}</span>
+                      <span className="text-sm font-medium line-clamp-2">
+                        {file.name}
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {sizeMB} MB
                       </span>
@@ -497,8 +501,11 @@ export default function SendPage() {
                   <Button
                     variant="destructive"
                     size="sm"
+                    className="mt-1 self-start"
                     onClick={() =>
-                      setAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                      setAttachments((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )
                     }
                   >
                     Remove
