@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const results = await Promise.allSettled(
       recipients.map((email) =>
         resend.emails.send({
-          from: "The Globe in Pattaya <info@theglobeasia.com>",
+          from: "The Globe in Pattaya <info@mail.theglobeasia.com>",
           to: email,
           subject,
           html,
