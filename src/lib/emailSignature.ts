@@ -1,37 +1,48 @@
-// src/lib/emailSignature.ts
 export const emailSignature = `
-<div style="font-family: Arial, Helvetica, sans-serif; color:#333;">
-  <p style="margin:0; font-size:18px; font-weight:bold;">Chef Alex Hardinan</p>
-  <p style="margin:4px 0; font-size:14px; color:#666;">
-    Executive Chef • Founder of Elizabeth CRM
-  </p>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td style="font-family: Arial, Helvetica, sans-serif; padding-top: 8px;">
 
-  <p style="margin:10px 0 0 0; font-size:13px; color:#777;">
-    The Globe’s Hidden Gem<br>
-    Pattaya, Thailand
-  </p>
+      <table cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td style="font-size:18px; font-weight:bold; color:#333333;">
+            The Globe
+          </td>
+        </tr>
 
-  <p style="margin:10px 0 0 0; font-size:13px;">
-    <a href="mailto:info@elizabeth.software" style="color:#b8860b; text-decoration:none;">
-      info@elizabeth.software
-    </a>
-  </p>
+        <tr>
+          <td style="font-size:14px; color:#555555; padding-top:2px;">
+            The Globe’s Heritage by Chef Alex • The Globe Hotel
+          </td>
+        </tr>
 
-  <p style="margin:5px 0 0 0; font-size:12px;">
-    <a href="https://elizabeth.software" style="color:#000; font-weight:bold; text-decoration:none;">
-      www.elizabeth.software
-    </a>
-  </p>
+        <tr>
+          <td style="font-size:13px; color:#777777; padding-top:8px; line-height:1.4;">
+            The Globe’s Hidden Gem<br />
+            Pattaya, Thailand
+          </td>
+        </tr>
 
-  <div style="margin-top:12px;">
-    <a href="https://www.facebook.com" style="margin-right:10px;">
-      <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png"
-           width="22" height="22" />
-    </a>
-    <a href="https://www.instagram.com">
-      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png"
-           width="22" height="22" />
-    </a>
-  </div>
-</div>
+        <tr>
+          <td style="font-size:13px; padding-top:8px;">
+            <a href="mailto:info@theglobeasia.com"
+               style="color:#b8860b; text-decoration:none;">
+              info@theglobeasia.com
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="font-size:12px; padding-top:6px;">
+            <a href="https://theglobeasia.com"
+               style="color:#000; font-weight:bold; text-decoration:none;">
+              www.theglobeasia.com
+            </a>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
 `;
