@@ -106,9 +106,6 @@ export default function SendPage() {
     );
   }
 
-  // -------------------------------------------------------------
-  // FIXED send() FUNCTION (ONLY FIXED BRACES — NOTHING ELSE)
-  // -------------------------------------------------------------
   async function send() {
     try {
       if (mode === "individual" && !selected) {
@@ -161,7 +158,6 @@ export default function SendPage() {
 
       const j = await res.json();
 
-      // ✅ FIXED BRACES — THIS BLOCK WAS BROKEN BEFORE
       if (res.ok) {
         setStatus(`Sent: ${j.count} email(s)`);
 
@@ -170,7 +166,6 @@ export default function SendPage() {
           description: `Successfully sent ${j.count} email(s).`,
         });
 
-        // Reset fields
         setSubject("");
         setBody("");
         setSelected("");
@@ -197,10 +192,6 @@ export default function SendPage() {
       setIsSending(false);
     }
   }
-
-  // -------------------------------------------------------------
-  // NOTHING BELOW THIS LINE WAS CHANGED
-  // -------------------------------------------------------------
 
   async function saveTemplate() {
     if (!newTemplateName.trim() || !subject.trim() || !body.trim()) {
@@ -427,11 +418,47 @@ export default function SendPage() {
 
       <div>
         <label className="text-sm">Attachments</label>
+
+        {/* ✅ UPDATED BLOCK — FILE SIZE LIMIT ADDED */}
         <Input
           type="file"
           multiple
-          onChange={(e) => setAttachments(Array.from(e.target.files || []))}
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+            const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total
+
+            let total = 0;
+            const valid: File[] = [];
+
+            for (const f of files) {
+              if (f.size > MAX_FILE_SIZE) {
+                toast({
+                  title: "Attachment too large",
+                  description: `${f.name} exceeds 5MB.`,
+                  variant: "destructive",
+                });
+                continue;
+              }
+
+              total += f.size;
+              valid.push(f);
+            }
+
+            if (total > MAX_TOTAL_SIZE) {
+              toast({
+                title: "Attachments too large",
+                description: "Combined attachments must be under 10MB.",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            setAttachments(valid);
+          }}
         />
+
         {attachments.length > 0 && (
           <p className="text-xs text-muted-foreground mt-1">
             {attachments.length} file(s) selected
