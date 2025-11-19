@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,25 +10,73 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 type Tier = "BASIC" | "SILVER" | "GOLD";
 
+/* Email validation to match server rules */
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+/* Auto-capitalize full name — “john smith” → “John Smith” */
+function formatName(str: string) {
+  return str
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export default function CreateMemberForm() {
+  const { toast } = useToast();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [tier, setTier] = useState<Tier>("BASIC");
   const [status, setStatus] = useState("");
 
-  // Full client-side validation to match server rules
-  function isValidEmail(email: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  }
+  const [existingEmails, setExistingEmails] = useState<string[]>([]);
+
+  /* Load existing emails for duplicate check */
+  useEffect(() => {
+    fetch("/api/members")
+      .then((r) => r.json())
+      .then((members) =>
+        setExistingEmails(
+          (members || []).map((m: any) =>
+            String(m.email || "").trim().toLowerCase()
+          )
+        )
+      )
+      .catch(() => setExistingEmails([]));
+  }, []);
+
+  const cleanedEmail = email.trim().toLowerCase();
+  const emailOk = isValidEmail(email);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!isValidEmail(email)) {
-      setStatus("Invalid email format");
+    const cleanedName = formatName(name.trim());
+
+    /* Validate before sending */
+    if (!cleanedName || !emailOk) {
+      toast({
+        title: "Invalid Details",
+        description: "Please enter a valid name and email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    /* Duplicate email prevention */
+    if (existingEmails.includes(cleanedEmail)) {
+      toast({
+        title: "Duplicate Email",
+        description: "This email already exists in your member list.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -38,8 +86,8 @@ export default function CreateMemberForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
+        name: cleanedName,
+        email: cleanedEmail,
         tier,
       }),
     });
@@ -47,11 +95,24 @@ export default function CreateMemberForm() {
     const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
+      toast({
+        title: "Member Created",
+        description: `${cleanedName} has been added successfully.`,
+      });
+
       setStatus("Saved successfully");
       setName("");
       setEmail("");
       setTier("BASIC");
+
+      /* Update for real-time duplicate detection */
+      setExistingEmails((prev) => [...prev, cleanedEmail]);
     } else {
+      toast({
+        title: "Error",
+        description: data.error || "Something went wrong.",
+        variant: "destructive",
+      });
       setStatus(data.error || "Error");
     }
   }
@@ -63,6 +124,7 @@ export default function CreateMemberForm() {
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onBlur={() => name && setName(formatName(name))}
           required
         />
       </div>
@@ -74,9 +136,7 @@ export default function CreateMemberForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className={
-            email.length > 0 && !isValidEmail(email)
-              ? "border-red-500"
-              : ""
+            email.length > 0 && !emailOk ? "border-red-500" : ""
           }
           required
         />
@@ -99,7 +159,7 @@ export default function CreateMemberForm() {
       <Button
         type="submit"
         className="btn-gold"
-        disabled={!name.trim() || !isValidEmail(email)}
+        disabled={!name.trim() || !emailOk}
       >
         Create
       </Button>
