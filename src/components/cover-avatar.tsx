@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { UploadButton } from "@uploadthing/react";
-import type { UploadRouter } from "@/lib/uploadthing"; // ✅ correct import
+import type { UploadRouter } from "@/lib/uploadthing"; // correct import
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function CoverAvatar() {
 
       {/* Hidden UploadThing control */}
       <div ref={uploadBtnRef} className="hidden">
-        <UploadButton<UploadRouter>
+        <UploadButton<UploadRouter, "coverImage">
           endpoint="coverImage"
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
