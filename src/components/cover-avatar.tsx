@@ -1,30 +1,37 @@
+// src/components/cover-avatar.tsx
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
+import { UploadButton } from "@uploadthing/react";
+import type { UploadRouter } from "@/lib/uploadthing";
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const uploadBtnRef = useRef<HTMLDivElement>(null);
 
+  // Load cover from DB (works across devices)
   useEffect(() => {
-    const saved = localStorage.getItem("elxir.cover");
-    if (saved) setSrc(saved);
+    fetch("/api/cover")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.coverUrl) setSrc(j.coverUrl);
+      })
+      .catch(() => {});
   }, []);
 
-  function pick() {
-    inputRef.current?.click();
+  async function saveCoverUrl(url: string) {
+    await fetch("/api/cover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coverUrl: url }),
+    });
   }
 
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = String(reader.result);
-      setSrc(data);
-      localStorage.setItem("elxir.cover", data);
-    };
-    reader.readAsDataURL(f);
+  function openPicker() {
+    // clicks the hidden UploadThing button
+    uploadBtnRef.current?.querySelector("button")?.click();
   }
 
   return (
@@ -34,24 +41,42 @@ export default function CoverAvatar() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={src} alt="Cover" className="w-full h-full object-cover" />
         ) : (
-          <div className="text-xs text-muted-foreground">Add cover</div>
+          <div className="text-xs text-muted-foreground">
+            {loading ? "Uploading..." : "Add cover"}
+          </div>
         )}
       </div>
 
       <button
-        onClick={pick}
+        onClick={openPicker}
         className="absolute -bottom-2 -right-2 rounded-full bg-black text-white p-2 shadow hover:bg-black/90"
         aria-label="Change cover"
+        disabled={loading}
       >
         <Camera className="w-4 h-4" />
       </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onChange}
-      />
+
+      {/* Hidden UploadThing control */}
+      <div ref={uploadBtnRef} className="hidden">
+        <UploadButton<UploadRouter>
+          endpoint="coverImage"
+          onUploadBegin={() => setLoading(true)}
+          onClientUploadComplete={async (res) => {
+            const url = res?.[0]?.url;
+            if (!url) {
+              setLoading(false);
+              return;
+            }
+            setSrc(url);
+            await saveCoverUrl(url);
+            setLoading(false);
+          }}
+          onUploadError={(err) => {
+            console.error(err);
+            setLoading(false);
+          }}
+        />
+      </div>
     </div>
   );
 }
