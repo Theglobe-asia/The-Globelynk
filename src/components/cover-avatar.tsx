@@ -30,7 +30,7 @@ export default function CoverAvatar() {
   }
 
   function openPicker() {
-    // clicks the hidden UploadThing button
+    // Clicks the hidden UploadThing button
     uploadBtnRef.current?.querySelector("button")?.click();
   }
 
@@ -58,7 +58,7 @@ export default function CoverAvatar() {
 
       {/* Hidden UploadThing control */}
       <div ref={uploadBtnRef} className="hidden">
-        <UploadButton<UploadRouter>
+        <UploadButton<UploadRouter, undefined>
           endpoint="coverImage"
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
