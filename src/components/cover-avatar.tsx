@@ -4,14 +4,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { UploadButton } from "@uploadthing/react";
-import type { UploadRouter } from "@/lib/uploadthing"; // correct import
+import type { OurFileRouter } from "@/app/api/uploadthing/core"; // IMPORTANT: correct router
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const uploadBtnRef = useRef<HTMLDivElement>(null);
 
-  // Load cover from DB (works across devices)
+  // Load saved cover from DB (works across devices/browsers)
   useEffect(() => {
     fetch("/api/cover")
       .then((r) => r.json())
@@ -37,7 +37,11 @@ export default function CoverAvatar() {
     <div className="relative mx-auto w-28 h-28 md:w-32 md:h-32">
       <div className="w-full h-full rounded-full overflow-hidden ring-2 ring-black/10 bg-muted flex items-center justify-center">
         {src ? (
-          <img src={src} alt="Cover" className="w-full h-full object-cover" />
+          <img
+            src={src}
+            alt="Cover"
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="text-xs text-muted-foreground">
             {loading ? "Uploading..." : "Add cover"}
@@ -54,10 +58,10 @@ export default function CoverAvatar() {
         <Camera className="w-4 h-4" />
       </button>
 
-      {/* Hidden UploadThing control */}
+      {/* Hidden UploadThing button */}
       <div ref={uploadBtnRef} className="hidden">
-        <UploadButton<UploadRouter, "coverImage">
-          endpoint="coverImage"
+        <UploadButton<OurFileRouter, "coverUploader">
+          endpoint="coverUploader"
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
             const url = res?.[0]?.url;
@@ -65,6 +69,7 @@ export default function CoverAvatar() {
               setLoading(false);
               return;
             }
+
             setSrc(url);
             await saveCoverUrl(url);
             setLoading(false);
