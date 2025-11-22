@@ -58,7 +58,7 @@ export default function CoverAvatar() {
 
       {/* Hidden UploadThing control */}
       <div ref={uploadBtnRef} className="hidden">
-        <UploadButton<UploadRouter, undefined>
+        <UploadButton<UploadRouter, any>
           endpoint="coverImage"
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
