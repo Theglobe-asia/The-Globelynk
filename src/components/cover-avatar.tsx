@@ -4,14 +4,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { UploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/app/api/uploadthing/core"; // correct router type
+import type { OurFileRouter } from "@/app/api/uploadthing/core"; // IMPORTANT
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const uploadBtnRef = useRef<HTMLDivElement>(null);
 
-  // Load cover image from DB
+  // Load cover from DB
   useEffect(() => {
     fetch("/api/cover")
       .then((r) => r.json())
@@ -35,6 +35,7 @@ export default function CoverAvatar() {
 
   return (
     <div className="relative mx-auto w-28 h-28 md:w-32 md:h-32">
+      {/* Avatar */}
       <div className="w-full h-full rounded-full overflow-hidden ring-2 ring-black/10 bg-muted flex items-center justify-center">
         {src ? (
           <img src={src} alt="Cover" className="w-full h-full object-cover" />
@@ -45,6 +46,7 @@ export default function CoverAvatar() {
         )}
       </div>
 
+      {/* Button */}
       <button
         onClick={openPicker}
         className="absolute -bottom-2 -right-2 rounded-full bg-black text-white p-2 shadow hover:bg-black/90"
@@ -54,10 +56,10 @@ export default function CoverAvatar() {
         <Camera className="w-4 h-4" />
       </button>
 
-      {/* Hidden UploadThing button */}
+      {/* Hidden UploadThing */}
       <div ref={uploadBtnRef} className="hidden">
         <UploadButton<OurFileRouter, "coverUploader">
-          endpoint="coverUploader" // <- CORRECT ENDPOINT
+          endpoint="coverUploader"       // IMPORTANT: real endpoint
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
             const url = res?.[0]?.url;
@@ -69,9 +71,7 @@ export default function CoverAvatar() {
             await saveCoverUrl(url);
             setLoading(false);
           }}
-          onUploadError={() => {
-            setLoading(false);
-          }}
+          onUploadError={() => setLoading(false)}
         />
       </div>
     </div>
