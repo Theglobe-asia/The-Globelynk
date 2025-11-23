@@ -1,17 +1,16 @@
-// src/components/cover-avatar.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { UploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/app/api/uploadthing/core"; // IMPORTANT
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const uploadBtnRef = useRef<HTMLDivElement>(null);
+  const hiddenRef = useRef<HTMLDivElement>(null);
 
-  // Load cover from DB
+  // Load saved cover URL from DB
   useEffect(() => {
     fetch("/api/cover")
       .then((r) => r.json())
@@ -30,7 +29,7 @@ export default function CoverAvatar() {
   }
 
   function openPicker() {
-    uploadBtnRef.current?.querySelector("button")?.click();
+    hiddenRef.current?.querySelector("button")?.click();
   }
 
   return (
@@ -49,17 +48,17 @@ export default function CoverAvatar() {
       {/* Button */}
       <button
         onClick={openPicker}
-        className="absolute -bottom-2 -right-2 rounded-full bg-black text-white p-2 shadow hover:bg-black/90"
-        aria-label="Change cover"
         disabled={loading}
+        aria-label="Change cover"
+        className="absolute -bottom-2 -right-2 rounded-full bg-black text-white p-2 shadow hover:bg-black/90"
       >
         <Camera className="w-4 h-4" />
       </button>
 
-      {/* Hidden UploadThing */}
-      <div ref={uploadBtnRef} className="hidden">
+      {/* Hidden UploadThing trigger */}
+      <div ref={hiddenRef} className="hidden">
         <UploadButton<OurFileRouter, "coverUploader">
-          endpoint="coverUploader"       // IMPORTANT: real endpoint
+          endpoint="coverUploader"
           onUploadBegin={() => setLoading(true)}
           onClientUploadComplete={async (res) => {
             const url = res?.[0]?.url;
