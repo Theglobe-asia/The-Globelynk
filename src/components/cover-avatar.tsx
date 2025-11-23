@@ -34,7 +34,7 @@ export default function CoverAvatar() {
     await fetch("/api/cover", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ coverUrl: url }),
+      body: JSON.stringify({ coverUrl: url, password: "CAlex" }),
     });
   }
 
