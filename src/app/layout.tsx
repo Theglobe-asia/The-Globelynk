@@ -1,6 +1,5 @@
+// src/app/layout.tsx
 import "@uploadthing/react/styles.css";
-import { UploadThingProvider } from "@uploadthing/react";
-
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -28,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <UploadThingProvider>{children}</UploadThingProvider>
+        {children}
       </body>
     </html>
   );
