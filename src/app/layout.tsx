@@ -1,8 +1,8 @@
 import "@uploadthing/react/styles.css";
-
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script"; // ADD THIS
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* UploadThing client script (v6) */}
-        <script src="https://uploadthing.com/client/script" />
+        <Script
+          src="https://uploadthing.com/client/script"
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>
