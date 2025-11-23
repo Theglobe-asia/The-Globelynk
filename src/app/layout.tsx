@@ -1,4 +1,5 @@
-import "@uploadthing/react/styles.css";   // REQUIRED for UploadThing
+// src/app/layout.tsx
+import "@uploadthing/react/styles.css";   // <-- REQUIRED for UploadThing
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -21,11 +22,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
+      <head>
+        {/* THIS SCRIPT IS REQUIRED FOR UPLOADTHING TO WORK */}
+        <script src="https://uploadthing.com/client/script"></script>
+      </head>
+
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
