@@ -5,19 +5,13 @@ import { authOptions } from "@/lib/auth";
 const f = createUploadthing();
 
 export const ourFileRouter = {
-  coverUploader: f({
-    image: {
-      maxFileSize: "2MB",
-      maxFileCount: 1,
-    },
-  })
+  coverUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
     .middleware(async () => {
       const session = await getServerSession(authOptions);
       if (!session?.user) throw new Error("Unauthorized");
       return { userId: session.user.id };
     })
-    .onUploadComplete(async ({ file }) => {
-      // Return the uploaded file URL to the client
+    .onUploadComplete(({ file }) => {
       return { url: file.url };
     }),
 } satisfies FileRouter;

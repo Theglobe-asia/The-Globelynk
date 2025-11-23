@@ -1,5 +1,5 @@
-// src/app/layout.tsx
-import "@uploadthing/react/styles.css";   // REQUIRED
+import "@uploadthing/react/styles.css";
+import { UploadThingProvider } from "@uploadthing/react";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -28,13 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-
-        {/* IMPORTANT: UploadThing client script MUST be inside <body> LAST */}
-        <script 
-          src="https://uploadthing.com/client/script"
-          data-ut-element="auto"
-        ></script>
+        <UploadThingProvider>{children}</UploadThingProvider>
       </body>
     </html>
   );

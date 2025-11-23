@@ -1,24 +1,18 @@
-// src/components/cover-avatar.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera } from "lucide-react";
+import { useEffect, useState } from "react";
 import { UploadButton } from "@uploadthing/react";
+import { Camera } from "lucide-react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const hiddenRef = useRef<HTMLDivElement>(null);
-
-  // Load saved cover URL from DB
   useEffect(() => {
     fetch("/api/cover")
       .then((r) => r.json())
-      .then((j) => {
-        if (j?.coverUrl) setSrc(j.coverUrl);
-      })
+      .then((j) => j?.coverUrl && setSrc(j.coverUrl))
       .catch(() => {});
   }, []);
 
@@ -30,15 +24,8 @@ export default function CoverAvatar() {
     });
   }
 
-  function openPicker() {
-    // click the real UploadThing button inside the hidden div
-    const btn = hiddenRef.current?.querySelector("button");
-    btn?.click();
-  }
-
   return (
     <div className="relative mx-auto w-28 h-28 md:w-32 md:h-32">
-      {/* Avatar */}
       <div className="w-full h-full rounded-full overflow-hidden ring-2 ring-black/10 bg-muted flex items-center justify-center">
         {src ? (
           <img src={src} alt="Cover" className="w-full h-full object-cover" />
@@ -49,34 +36,27 @@ export default function CoverAvatar() {
         )}
       </div>
 
-      {/* Custom button */}
-      <button
-        onClick={openPicker}
-        disabled={loading}
-        aria-label="Change cover"
-        className="absolute -bottom-2 -right-2 rounded-full bg-black text-white p-2 shadow hover:bg-black/90"
-      >
-        <Camera className="w-4 h-4" />
-      </button>
-
-      {/* Hidden UploadThing Button */}
-      <div ref={hiddenRef} className="hidden">
-        <UploadButton<OurFileRouter, "coverUploader">
-          endpoint="coverUploader"
-          onUploadBegin={() => setLoading(true)}
-          onClientUploadComplete={async (res) => {
-            const url = res?.[0]?.url;
-            if (!url) {
-              setLoading(false);
-              return;
-            }
+      {/* REAL UploadThing button */}
+      <UploadButton<OurFileRouter, "coverUploader">
+        endpoint="coverUploader"
+        onUploadBegin={() => setLoading(true)}
+        onClientUploadComplete={async (res) => {
+          const url = res?.[0]?.url;
+          if (url) {
             setSrc(url);
             await saveCoverUrl(url);
-            setLoading(false);
-          }}
-          onUploadError={() => setLoading(false)}
-        />
-      </div>
+          }
+          setLoading(false);
+        }}
+        onUploadError={() => setLoading(false)}
+        appearance={{
+          container: "absolute -bottom-2 -right-2",
+          button: "rounded-full bg-black p-2 text-white hover:bg-black/80",
+          allowedContent: "hidden",
+        }}
+      >
+        <Camera className="w-4 h-4" />
+      </UploadButton>
     </div>
   );
 }
