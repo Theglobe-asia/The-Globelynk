@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UploadButton } from "@uploadthing/react";
 import { Camera } from "lucide-react";
+import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
 export default function CoverAvatar() {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Load cover from DB
   useEffect(() => {
     fetch("/api/cover")
       .then((r) => r.json())
-      .then((j) => j?.coverUrl && setSrc(j.coverUrl))
-      .catch(() => {});
+      .then((j) => j?.coverUrl && setSrc(j.coverUrl));
   }, []);
 
   async function saveCoverUrl(url: string) {
@@ -26,6 +26,7 @@ export default function CoverAvatar() {
 
   return (
     <div className="relative mx-auto w-28 h-28 md:w-32 md:h-32">
+
       <div className="w-full h-full rounded-full overflow-hidden ring-2 ring-black/10 bg-muted flex items-center justify-center">
         {src ? (
           <img src={src} alt="Cover" className="w-full h-full object-cover" />
@@ -36,27 +37,30 @@ export default function CoverAvatar() {
         )}
       </div>
 
-      {/* REAL UploadThing button */}
-      <UploadButton<OurFileRouter, "coverUploader">
-        endpoint="coverUploader"
-        onUploadBegin={() => setLoading(true)}
-        onClientUploadComplete={async (res) => {
-          const url = res?.[0]?.url;
-          if (url) {
+      {/* UploadThing v6 button — works globally */}
+      <div className="absolute -bottom-2 -right-2">
+        <UploadButton<OurFileRouter>
+          endpoint="coverUploader"
+          onUploadBegin={() => setLoading(true)}
+          onClientUploadComplete={async (res) => {
+            const url = res?.[0]?.url;
+            if (!url) return;
+
             setSrc(url);
             await saveCoverUrl(url);
-          }
-          setLoading(false);
-        }}
-        onUploadError={() => setLoading(false)}
-        appearance={{
-          container: "absolute -bottom-2 -right-2",
-          button: "rounded-full bg-black p-2 text-white hover:bg-black/80",
-          allowedContent: "hidden",
-        }}
-      >
-        <Camera className="w-4 h-4" />
-      </UploadButton>
+            setLoading(false);
+          }}
+          onUploadError={() => setLoading(false)}
+          appearance={{
+            container: "w-8 h-8",
+            button:
+              "w-8 h-8 rounded-full bg-black text-white flex items-center justify-center hover:bg-black/80",
+          }}
+        >
+          <Camera className="w-4 h-4" />
+        </UploadButton>
+      </div>
+
     </div>
   );
 }
