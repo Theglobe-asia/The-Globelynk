@@ -12,7 +12,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
-import { buildEmailHTML } from "@/lib/emailTemplate";
+import { buildCampaignEmail } from "@/lib/campaign-email"; // ✅ NEW
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -55,7 +55,13 @@ export async function POST(req: Request) {
       recipients = members.map((m: { email: string }) => m.email);
     }
 
-    const html = buildEmailHTML(body);
+    // ✅ Campaign HTML
+    const html = buildCampaignEmail({
+      subject,
+      body,
+      // You can override these later if you add inputs:
+      // bannerUrl, ctaUrl, ctaText, leftImageUrl, rightImageUrl, etc.
+    });
 
     const resendAttachments =
       attachments && attachments.length > 0

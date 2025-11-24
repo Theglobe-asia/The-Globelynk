@@ -1,4 +1,5 @@
 "use client";
+import { buildCampaignEmail } from "@/lib/campaign-email";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -247,15 +248,14 @@ export default function SendPage() {
   }
 
   function buildPreview() {
-    const escaped = body
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    const withBreaks = escaped.replace(/\n/g, "<br>");
-    const html = withBreaks.replace(
-      /(https?:\/\/[^\s<]+)/g,
-      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#b8860b; font-weight:bold;">$1</a>'
-    );
+    const html = buildCampaignEmail({
+      subject: subject || "No Subject",
+      body: body || "",
+    });
+    
+      setPreviewHtml(html);
+      setShowPreview(true);
+  }
 
     const signature = `
 <div style="font-family: Arial, Helvetica, sans-serif; color:#333;">
