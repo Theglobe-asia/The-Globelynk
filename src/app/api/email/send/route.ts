@@ -1,10 +1,6 @@
 // src/app/api/email/send/route.ts
 export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-  },
+  api: { bodyParser: { sizeLimit: "10mb" } },
 };
 
 import { NextResponse } from "next/server";
@@ -12,13 +8,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
-import { buildCampaignEmail } from "@/lib/campaign-email"; // ✅ NEW
+import { buildCampaignEmail, type CampaignTemplateKey } from "@/lib/campaign-email";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 type AttachmentPayload = {
   filename: string;
-  content: string;   // base64
+  content: string; // base64
   mimeType: string;
 };
 
@@ -28,39 +24,68 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {
-    const { segment, tier, to, subject, body, attachments } = await req.json() as {
+    const payload = (await req.json()) as {
       segment: "individual" | "bulk";
       tier: "all" | "basic" | "silver" | "gold";
       to?: string;
       subject: string;
       body: string;
+
+      templateKey?: CampaignTemplateKey;
+      bannerUrl?: string;
+      ctaText?: string;
+      ctaUrl?: string;
+      leftImageUrl?: string;
+      leftImageLabel?: string;
+      rightImageUrl?: string;
+      rightImageLabel?: string;
+
       attachments?: AttachmentPayload[];
     };
+
+    const {
+      segment,
+      tier,
+      to,
+      subject,
+      body,
+      attachments,
+
+      templateKey,
+      bannerUrl,
+      ctaText,
+      ctaUrl,
+      leftImageUrl,
+      leftImageLabel,
+      rightImageUrl,
+      rightImageLabel,
+    } = payload;
 
     let recipients: string[] = [];
 
     if (segment === "individual") {
       if (!to)
-        return NextResponse.json(
-          { error: "Missing recipient" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Missing recipient" }, { status: 400 });
       recipients = [to];
     } else {
       const members = await prisma.member.findMany({
         where: tier === "all" ? {} : { tier: tier.toUpperCase() as any },
         select: { email: true },
       });
-
-      recipients = members.map((m: { email: string }) => m.email);
+      recipients = members.map((m) => m.email);
     }
 
-    // ✅ Campaign HTML
     const html = buildCampaignEmail({
+      templateKey: templateKey || "classic",
       subject,
       body,
-      // You can override these later if you add inputs:
-      // bannerUrl, ctaUrl, ctaText, leftImageUrl, rightImageUrl, etc.
+      bannerUrl,
+      ctaText,
+      ctaUrl,
+      leftImageUrl,
+      leftImageLabel,
+      rightImageUrl,
+      rightImageLabel,
     });
 
     const resendAttachments =

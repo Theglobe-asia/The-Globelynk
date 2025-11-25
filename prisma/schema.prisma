@@ -8,16 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
+  id        String          @id @default(cuid())
   name      String
-  email     String     @unique
+  email     String          @unique
   password  String
-  role      Role       @default(EDITOR)
-  coverUrl  String?    // ✅ NEW: global cover avatar URL
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  role      Role            @default(EDITOR)
+  coverUrl  String? // ✅ NEW: global cover avatar URL
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
   sessions  Session[]
-  emails    EmailLog[] @relation("UserEmails")
+  emails    EmailLog[]      @relation("UserEmails")
+  templates EmailTemplate[] // ✅ ADD THIS LINE
 }
 
 model Session {
@@ -75,4 +76,27 @@ model AppSetting {
 model Cover {
   id       Int    @id @default(1)
   coverUrl String
+}
+
+model EmailTemplate {
+  id      String @id
+  userId  String
+  name    String
+  subject String
+  body    String
+
+  // ✅ Campaign engine fields
+  templateKey     String  @default("classic")
+  bannerUrl       String?
+  ctaText         String?
+  ctaUrl          String?
+  leftImageUrl    String?
+  leftImageLabel  String?
+  rightImageUrl   String?
+  rightImageLabel String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

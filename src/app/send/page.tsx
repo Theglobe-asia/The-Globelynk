@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildCampaignEmail, type CampaignTemplateKey } from "@/lib/campaign-email";
+
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -13,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import BackToDashboard from "@/components/back-to-dashboard";
 import { useToast } from "@/hooks/use-toast";
-import { buildCampaignEmail } from "@/lib/campaign-email";
 
 type Member = {
   id: string;
@@ -27,6 +28,15 @@ type Template = {
   name: string;
   subject: string;
   body: string;
+
+  templateKey?: CampaignTemplateKey;
+  bannerUrl?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  leftImageUrl?: string;
+  leftImageLabel?: string;
+  rightImageUrl?: string;
+  rightImageLabel?: string;
 };
 
 type AttachmentPayload = {
@@ -36,27 +46,40 @@ type AttachmentPayload = {
 };
 
 export default function SendPage() {
+  const { toast } = useToast();
+
+  // recipients
   const [members, setMembers] = useState<Member[]>([]);
   const [mode, setMode] = useState<"individual" | "bulk">("individual");
   const [tier, setTier] = useState<"all" | "basic" | "silver" | "gold">("all");
   const [selected, setSelected] = useState<string>("");
 
+  // message
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [status, setStatus] = useState("");
 
+  // campaign fields
+  const [templateKey, setTemplateKey] = useState<CampaignTemplateKey>("classic");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
+  const [leftImageUrl, setLeftImageUrl] = useState("");
+  const [leftImageLabel, setLeftImageLabel] = useState("");
+  const [rightImageUrl, setRightImageUrl] = useState("");
+  const [rightImageLabel, setRightImageLabel] = useState("");
+
+  // templates
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("none");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
+  // attachments
   const [attachments, setAttachments] = useState<File[]>([]);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-
   const [isSending, setIsSending] = useState(false);
-
-  const { toast } = useToast();
 
   useEffect(() => {
     fetch("/api/members")
@@ -70,17 +93,14 @@ export default function SendPage() {
       .catch(() => setTemplates([]));
   }, []);
 
-  const filtered =
-    tier === "all"
-      ? members
-      : members.filter((m) => m.tier === tier.toUpperCase());
+  const filtered = useMemo(() => {
+    return tier === "all" ? members : members.filter((m) => m.tier === tier.toUpperCase());
+  }, [members, tier]);
 
   const filteredCount =
     mode === "individual" ? (selected ? 1 : 0) : filtered.length;
 
-  async function filesToAttachmentPayload(
-    files: File[]
-  ): Promise<AttachmentPayload[]> {
+  async function filesToAttachmentPayload(files: File[]): Promise<AttachmentPayload[]> {
     if (!files.length) return [];
     return Promise.all(
       files.map(
@@ -149,6 +169,16 @@ export default function SendPage() {
           to: selected,
           subject,
           body,
+
+          templateKey,
+          bannerUrl,
+          ctaText,
+          ctaUrl,
+          leftImageUrl,
+          leftImageLabel,
+          rightImageUrl,
+          rightImageLabel,
+
           attachments: attachmentPayload,
         }),
       });
@@ -200,6 +230,7 @@ export default function SendPage() {
       });
       return;
     }
+
     try {
       setIsSavingTemplate(true);
       const res = await fetch("/api/templates", {
@@ -209,9 +240,20 @@ export default function SendPage() {
           name: newTemplateName.trim(),
           subject,
           body,
+
+          templateKey,
+          bannerUrl,
+          ctaText,
+          ctaUrl,
+          leftImageUrl,
+          leftImageLabel,
+          rightImageUrl,
+          rightImageLabel,
         }),
       });
+
       const t = await res.json();
+
       if (!res.ok) {
         const msg = t.error || "unknown";
         setStatus(`Error saving template: ${msg}`);
@@ -222,6 +264,7 @@ export default function SendPage() {
         });
         return;
       }
+
       setTemplates((prev) => [t, ...prev]);
       setNewTemplateName("");
       setSelectedTemplateId(t.id);
@@ -244,44 +287,35 @@ export default function SendPage() {
   }
 
   function buildPreview() {
-    const campaignHtml = buildCampaignEmail({
+    const html = buildCampaignEmail({
+      templateKey,
       subject: subject || "No Subject",
       body: body || "",
+      bannerUrl: bannerUrl || undefined,
+      ctaText: ctaText || undefined,
+      ctaUrl: ctaUrl || undefined,
+      leftImageUrl: leftImageUrl || undefined,
+      leftImageLabel: leftImageLabel || undefined,
+      rightImageUrl: rightImageUrl || undefined,
+      rightImageLabel: rightImageLabel || undefined,
     });
 
-    const signature = `
-<div style="font-family: Arial, Helvetica, sans-serif; color:#333;">
-  <p style="margin:0; font-size:18px; font-weight:bold;">The Globe</p>
-  <p style="margin:4px 0; font-size:14px; color:#666;">
-    The Globe’s Heritage by Chef Alex • The Globe Hotel
-  </p>
-  <p style="margin:10px 0 0 0; font-size:13px; color:#777;">
-    The Globe’s Hidden Gem<br>
-    Pattaya, Thailand
-  </p>
-  <p style="margin:10px 0 0 0; font-size:13px;">
-    <a href="mailto:info@theglobeasia.com" style="color:#b8860b; text-decoration:none;">
-      info@theglobeasia.com
-    </a>
-  </p>
-  <p style="margin:5px 0 0 0; font-size:12px;">
-    <a href="https://theglobeasia.com" style="color:#000; font-weight:bold; text-decoration:none;">
-      www.theglobeasia.com
-    </a>
-  </p>
-</div>
-`;
-
-    const wrapper = `
-<div style="max-width:600px;margin:0 auto;background:#ffffff;padding:24px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.08);font-family:Arial,Helvetica,sans-serif;">
-  ${campaignHtml}
-  <hr style="margin:24px 0;border:none;border-top:1px solid #eeeeee;" />
-  ${signature}
-</div>
-`;
-
-    setPreviewHtml(wrapper);
+    setPreviewHtml(html);
     setShowPreview(true);
+  }
+
+  function applyTemplate(t: Template) {
+    setSubject(t.subject || "");
+    setBody(t.body || "");
+
+    setTemplateKey(t.templateKey || "classic");
+    setBannerUrl(t.bannerUrl || "");
+    setCtaText(t.ctaText || "");
+    setCtaUrl(t.ctaUrl || "");
+    setLeftImageUrl(t.leftImageUrl || "");
+    setLeftImageLabel(t.leftImageLabel || "");
+    setRightImageUrl(t.rightImageUrl || "");
+    setRightImageLabel(t.rightImageLabel || "");
   }
 
   return (
@@ -289,13 +323,12 @@ export default function SendPage() {
       <BackToDashboard />
       <h2 className="text-2xl font-semibold">Send Email</h2>
 
+      {/* recipient selection */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-sm">Send Mode</label>
           <Select value={mode} onValueChange={(v) => setMode(v as any)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="individual">individual</SelectItem>
               <SelectItem value="bulk">bulk</SelectItem>
@@ -305,9 +338,7 @@ export default function SendPage() {
         <div>
           <label className="text-sm">Tier</label>
           <Select value={tier} onValueChange={(v) => setTier(v as any)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">all</SelectItem>
               <SelectItem value="basic">basic</SelectItem>
@@ -321,10 +352,7 @@ export default function SendPage() {
       {mode === "individual" && (
         <div>
           <label className="text-sm">Member</label>
-          <Select
-            value={selected || undefined}
-            onValueChange={(v) => setSelected(v)}
-          >
+          <Select value={selected || undefined} onValueChange={setSelected}>
             <SelectTrigger>
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -348,35 +376,31 @@ export default function SendPage() {
         }
       />
 
-      {/* Templates */}
+      {/* templates */}
       <div className="space-y-2">
         <label className="text-sm">Template</label>
-        <div className="flex gap-2">
-          <Select
-            value={selectedTemplateId}
-            onValueChange={(id) => {
-              setSelectedTemplateId(id);
-              if (id === "none") return;
-              const t = templates.find((t) => t.id === id);
-              if (t) {
-                setSubject(t.subject);
-                setBody(t.body);
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="No template" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No template</SelectItem>
-              {templates.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
+        <Select
+          value={selectedTemplateId}
+          onValueChange={(id) => {
+            setSelectedTemplateId(id);
+            if (id === "none") return;
+            const t = templates.find((x) => x.id === id);
+            if (t) applyTemplate(t);
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="No template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No template</SelectItem>
+            {templates.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <div className="flex gap-2">
           <Input
@@ -395,6 +419,32 @@ export default function SendPage() {
         </div>
       </div>
 
+      {/* campaign layout selector */}
+      <div className="space-y-2">
+        <label className="text-sm">Campaign Layout</label>
+        <Select value={templateKey} onValueChange={(v) => setTemplateKey(v as CampaignTemplateKey)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select layout" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="classic">Classic (Mailchimp style)</SelectItem>
+            <SelectItem value="minimal">Minimal</SelectItem>
+            <SelectItem value="spotlight">Spotlight</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* banner */}
+      <div className="space-y-2">
+        <label className="text-sm">Banner Image URL</label>
+        <Input
+          placeholder="https://..."
+          value={bannerUrl}
+          onChange={(e) => setBannerUrl(e.target.value)}
+        />
+      </div>
+
+      {/* subject/body */}
       <Input
         placeholder="Subject"
         value={subject}
@@ -408,7 +458,58 @@ export default function SendPage() {
         onChange={(e) => setBody(e.target.value)}
       />
 
-      {/* Attachments */}
+      {/* CTA */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm">CTA Text</label>
+          <Input
+            placeholder="Explore Now"
+            value={ctaText}
+            onChange={(e) => setCtaText(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="text-sm">CTA URL</label>
+          <Input
+            placeholder="https://..."
+            value={ctaUrl}
+            onChange={(e) => setCtaUrl(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 2-column images */}
+      <div className="space-y-2">
+        <label className="text-sm">Two-Column Images</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Input
+              placeholder="Left image URL"
+              value={leftImageUrl}
+              onChange={(e) => setLeftImageUrl(e.target.value)}
+            />
+            <Input
+              placeholder="Left label"
+              value={leftImageLabel}
+              onChange={(e) => setLeftImageLabel(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              placeholder="Right image URL"
+              value={rightImageUrl}
+              onChange={(e) => setRightImageUrl(e.target.value)}
+            />
+            <Input
+              placeholder="Right label"
+              value={rightImageLabel}
+              onChange={(e) => setRightImageLabel(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* attachments (unchanged UI) */}
       <div>
         <label className="text-sm">Attachments</label>
 
@@ -433,7 +534,6 @@ export default function SendPage() {
                 });
                 continue;
               }
-
               total += f.size;
               valid.push(f);
             }
@@ -509,6 +609,7 @@ export default function SendPage() {
         )}
       </div>
 
+      {/* actions */}
       <div className="flex gap-3">
         <Button
           variant="outline"
@@ -530,6 +631,7 @@ export default function SendPage() {
 
       {status && <p className="text-sm">{status}</p>}
 
+      {/* preview modal */}
       {showPreview && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white max-w-xl w-full max-h-[80vh] overflow-auto rounded-xl p-6 space-y-4">
