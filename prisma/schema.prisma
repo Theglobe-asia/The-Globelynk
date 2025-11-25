@@ -79,7 +79,7 @@ model Cover {
 }
 
 model EmailTemplate {
-  id      String  @id @default(cuid())   // ✅ Fix added
+  id      String @id @default(cuid()) // ✅ Fix added
   userId  String
   name    String
   subject String
