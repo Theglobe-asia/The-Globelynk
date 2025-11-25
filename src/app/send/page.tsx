@@ -1,5 +1,4 @@
 "use client";
-import { buildCampaignEmail } from "@/lib/campaign-email";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import BackToDashboard from "@/components/back-to-dashboard";
 import { useToast } from "@/hooks/use-toast";
+import { buildCampaignEmail } from "@/lib/campaign-email";
 
 type Member = {
   id: string;
@@ -76,11 +76,7 @@ export default function SendPage() {
       : members.filter((m) => m.tier === tier.toUpperCase());
 
   const filteredCount =
-    mode === "individual"
-      ? selected
-        ? 1
-        : 0
-      : filtered.length;
+    mode === "individual" ? (selected ? 1 : 0) : filtered.length;
 
   async function filesToAttachmentPayload(
     files: File[]
@@ -248,14 +244,10 @@ export default function SendPage() {
   }
 
   function buildPreview() {
-    const html = buildCampaignEmail({
+    const campaignHtml = buildCampaignEmail({
       subject: subject || "No Subject",
       body: body || "",
     });
-    
-      setPreviewHtml(html);
-      setShowPreview(true);
-  }
 
     const signature = `
 <div style="font-family: Arial, Helvetica, sans-serif; color:#333;">
@@ -282,13 +274,12 @@ export default function SendPage() {
 
     const wrapper = `
 <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:24px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,0.08);font-family:Arial,Helvetica,sans-serif;">
-  <div style="font-size:15px;line-height:1.6;color:#333333;">
-    ${html}
-  </div>
+  ${campaignHtml}
   <hr style="margin:24px 0;border:none;border-top:1px solid #eeeeee;" />
   ${signature}
 </div>
 `;
+
     setPreviewHtml(wrapper);
     setShowPreview(true);
   }
@@ -386,6 +377,7 @@ export default function SendPage() {
             </SelectContent>
           </Select>
         </div>
+
         <div className="flex gap-2">
           <Input
             placeholder="Template name (for saving current email)"
@@ -416,7 +408,7 @@ export default function SendPage() {
         onChange={(e) => setBody(e.target.value)}
       />
 
-      {/* Attachments — enhanced UI, grid layout */}
+      {/* Attachments */}
       <div>
         <label className="text-sm">Attachments</label>
 
@@ -426,8 +418,8 @@ export default function SendPage() {
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
 
-            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
-            const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total
+            const MAX_FILE_SIZE = 5 * 1024 * 1024;
+            const MAX_TOTAL_SIZE = 10 * 1024 * 1024;
 
             let total = 0;
             const valid: File[] = [];
