@@ -4,16 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/templates/:id
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const id = params.id;
+  const id = context.params.id;
 
   const rows = await prisma.$queryRaw<
     { id: string; name: string; subject: string; body: string }[]
@@ -31,16 +28,13 @@ export async function GET(
 }
 
 // DELETE /api/templates/:id
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const id = params.id;
+  const id = context.params.id;
 
   await prisma.$executeRaw`
     delete from "EmailTemplate"
