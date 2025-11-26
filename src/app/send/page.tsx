@@ -52,6 +52,8 @@ export default function SendPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [mode, setMode] = useState<"individual" | "bulk">("individual");
   const [tier, setTier] = useState<"all" | "basic" | "silver" | "gold">("all");
+
+  // MULTI-SELECT recipient string
   const [selected, setSelected] = useState<string>("");
 
   // message
@@ -94,11 +96,17 @@ export default function SendPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    return tier === "all" ? members : members.filter((m) => m.tier === tier.toUpperCase());
+    return tier === "all"
+      ? members
+      : members.filter((m) => m.tier === tier.toUpperCase());
   }, [members, tier]);
 
   const filteredCount =
-    mode === "individual" ? (selected ? 1 : 0) : filtered.length;
+    mode === "individual"
+      ? selected
+        ? selected.split(",").filter(Boolean).length
+        : 0
+      : filtered.length;
 
   async function filesToAttachmentPayload(files: File[]): Promise<AttachmentPayload[]> {
     if (!files.length) return [];
@@ -128,7 +136,7 @@ export default function SendPage() {
       if (mode === "individual" && !selected) {
         toast({
           title: "No recipient selected",
-          description: "Please choose a member to send the email to.",
+          description: "Please choose at least one member.",
           variant: "destructive",
         });
         setStatus("No recipient selected");
@@ -166,7 +174,7 @@ export default function SendPage() {
         body: JSON.stringify({
           segment: mode,
           tier,
-          to: selected,
+          to: selected, // MULTI-SELECT STRING
           subject,
           body,
 
@@ -217,72 +225,6 @@ export default function SendPage() {
       });
     } finally {
       setIsSending(false);
-    }
-  }
-
-  async function saveTemplate() {
-    if (!newTemplateName.trim() || !subject.trim() || !body.trim()) {
-      setStatus("Template needs name, subject, and body");
-      toast({
-        title: "Cannot save template",
-        description: "Template requires a name, subject, and body.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsSavingTemplate(true);
-      const res = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newTemplateName.trim(),
-          subject,
-          body,
-
-          templateKey,
-          bannerUrl,
-          ctaText,
-          ctaUrl,
-          leftImageUrl,
-          leftImageLabel,
-          rightImageUrl,
-          rightImageLabel,
-        }),
-      });
-
-      const t = await res.json();
-
-      if (!res.ok) {
-        const msg = t.error || "unknown";
-        setStatus(`Error saving template: ${msg}`);
-        toast({
-          title: "Error saving template",
-          description: msg,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setTemplates((prev) => [t, ...prev]);
-      setNewTemplateName("");
-      setSelectedTemplateId(t.id);
-      setStatus("Template saved");
-      toast({
-        title: "Template saved",
-        description: `Template "${t.name}" is now available.`,
-      });
-    } catch (err: any) {
-      const msg = err?.message || "unknown";
-      setStatus(`Error saving template: ${msg}`);
-      toast({
-        title: "Error saving template",
-        description: msg,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingTemplate(false);
     }
   }
 
@@ -349,21 +291,38 @@ export default function SendPage() {
         </div>
       </div>
 
+      {/* MULTI-SELECT RECIPIENTS */}
       {mode === "individual" && (
-        <div>
-          <label className="text-sm">Member</label>
-          <Select value={selected || undefined} onValueChange={setSelected}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select member" />
-            </SelectTrigger>
-            <SelectContent>
-              {filtered.map((m) => (
-                <SelectItem key={m.id} value={m.email}>
-                  {m.name} &lt;{m.email}&gt;
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2">
+          <label className="text-sm">Members (Multi-select)</label>
+
+          <div className="border rounded p-2 bg-white max-h-44 overflow-auto">
+            {filtered.map((m) => {
+              const list = selected ? selected.split(",") : [];
+              const isSelected = list.includes(m.email);
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-2 py-1 cursor-pointer"
+                  onClick={() => {
+                    setSelected((prev) => {
+                      const list = prev ? prev.split(",") : [];
+                      if (isSelected) {
+                        return list.filter((e) => e !== m.email).join(",");
+                      } else {
+                        return [...list, m.email].join(",");
+                      }
+                    });
+                  }}
+                >
+                  <input type="checkbox" checked={isSelected} readOnly />
+                  <span>
+                    {m.name} &lt;{m.email}&gt;
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -371,7 +330,9 @@ export default function SendPage() {
         readOnly
         value={
           mode === "individual"
-            ? selected || "No recipient selected"
+            ? selected
+              ? `${selected.split(",").filter(Boolean).length} recipient(s)`
+              : "No recipient selected"
             : `${filteredCount} recipient(s)`
         }
       />
@@ -411,7 +372,7 @@ export default function SendPage() {
           <Button
             variant="outline"
             type="button"
-            onClick={saveTemplate}
+            onClick={() => saveTemplate()}
             disabled={isSavingTemplate}
           >
             Save template
@@ -444,13 +405,14 @@ export default function SendPage() {
         />
       </div>
 
-      {/* subject/body */}
+      {/* subject */}
       <Input
         placeholder="Subject"
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
       />
 
+      {/* body */}
       <Textarea
         rows={8}
         placeholder="Write your message (links will be clickable)..."
@@ -509,7 +471,7 @@ export default function SendPage() {
         </div>
       </div>
 
-      {/* attachments (unchanged UI) */}
+      {/* attachments */}
       <div>
         <label className="text-sm">Attachments</label>
 

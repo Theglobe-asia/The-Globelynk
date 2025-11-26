@@ -1,4 +1,5 @@
 // src/app/api/email/send/route.ts
+
 export const config = {
   api: { bodyParser: { sizeLimit: "10mb" } },
 };
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     const payload = (await req.json()) as {
       segment: "individual" | "bulk";
       tier: "all" | "basic" | "silver" | "gold";
-      to?: string;
+      to?: string; // may contain MULTIPLE emails comma-separated
       subject: string;
       body: string;
 
@@ -63,18 +64,38 @@ export async function POST(req: Request) {
 
     let recipients: string[] = [];
 
+    // -----------------------------------------------------------
+    // ✅ INDIVIDUAL MODE — supports MULTI-SELECT
+    // to = "a@a.com,b@b.com,c@c.com"
+    // -----------------------------------------------------------
     if (segment === "individual") {
       if (!to)
-        return NextResponse.json({ error: "Missing recipient" }, { status: 400 });
-      recipients = [to];
-    } else {
+        return NextResponse.json(
+          { error: "Missing recipient" },
+          { status: 400 }
+        );
+
+      recipients = to
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
+    }
+
+    // -----------------------------------------------------------
+    // ✅ BULK MODE — unchanged
+    // -----------------------------------------------------------
+    else {
       const members = await prisma.member.findMany({
         where: tier === "all" ? {} : { tier: tier.toUpperCase() as any },
         select: { email: true },
       });
+
       recipients = members.map((m) => m.email);
     }
 
+    // -----------------------------------------------------------
+    // ✅ Build Campaign Email HTML
+    // -----------------------------------------------------------
     const html = buildCampaignEmail({
       templateKey: templateKey || "classic",
       subject,
@@ -88,6 +109,9 @@ export async function POST(req: Request) {
       rightImageLabel,
     });
 
+    // -----------------------------------------------------------
+    // Attachments
+    // -----------------------------------------------------------
     const resendAttachments =
       attachments && attachments.length > 0
         ? attachments.map((a) => ({
@@ -97,6 +121,9 @@ export async function POST(req: Request) {
           }))
         : undefined;
 
+    // -----------------------------------------------------------
+    // SEND EMAIL(S)
+    // -----------------------------------------------------------
     const results = await Promise.allSettled(
       recipients.map((email) =>
         resend.emails.send({
@@ -111,9 +138,15 @@ export async function POST(req: Request) {
 
     const successCount = results.filter((r) => r.status === "fulfilled").length;
 
+    // -----------------------------------------------------------
+    // LOG TO DATABASE
+    // -----------------------------------------------------------
     await prisma.emailLog.create({
       data: {
-        to: segment === "individual" ? to! : "bulk",
+        to:
+          segment === "individual"
+            ? to || ""
+            : "bulk",
         subject,
         tier: tier.toUpperCase(),
         count: successCount,
