@@ -48,20 +48,18 @@ type AttachmentPayload = {
 export default function SendPage() {
   const { toast } = useToast();
 
-  // recipients
+  // Recipients
   const [members, setMembers] = useState<Member[]>([]);
   const [mode, setMode] = useState<"individual" | "bulk">("individual");
   const [tier, setTier] = useState<"all" | "basic" | "silver" | "gold">("all");
-
-  // MULTI-SELECT recipient string
   const [selected, setSelected] = useState<string>("");
 
-  // message
+  // Message
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [status, setStatus] = useState("");
 
-  // campaign fields
+  // Campaign fields
   const [templateKey, setTemplateKey] = useState<CampaignTemplateKey>("classic");
   const [bannerUrl, setBannerUrl] = useState("");
   const [ctaText, setCtaText] = useState("");
@@ -71,13 +69,13 @@ export default function SendPage() {
   const [rightImageUrl, setRightImageUrl] = useState("");
   const [rightImageLabel, setRightImageLabel] = useState("");
 
-  // templates
+  // Templates
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("none");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
-  // attachments
+  // Attachments
   const [attachments, setAttachments] = useState<File[]>([]);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -174,7 +172,7 @@ export default function SendPage() {
         body: JSON.stringify({
           segment: mode,
           tier,
-          to: selected, // MULTI-SELECT STRING
+          to: selected,
           subject,
           body,
 
@@ -258,6 +256,77 @@ export default function SendPage() {
     setLeftImageLabel(t.leftImageLabel || "");
     setRightImageUrl(t.rightImageUrl || "");
     setRightImageLabel(t.rightImageLabel || "");
+  }
+
+  // -----------------------------------------
+  // SAVE TEMPLATE (Missing Function Restored)
+  // -----------------------------------------
+  async function saveTemplate() {
+    if (!newTemplateName.trim() || !subject.trim() || !body.trim()) {
+      setStatus("Template needs name, subject, and body");
+      toast({
+        title: "Cannot save template",
+        description: "Template requires a name, subject, and body.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSavingTemplate(true);
+
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newTemplateName.trim(),
+          subject,
+          body,
+
+          templateKey,
+          bannerUrl,
+          ctaText,
+          ctaUrl,
+          leftImageUrl,
+          leftImageLabel,
+          rightImageUrl,
+          rightImageLabel,
+        }),
+      });
+
+      const t = await res.json();
+
+      if (!res.ok) {
+        const msg = t.error || "unknown";
+        setStatus(`Error saving template: ${msg}`);
+        toast({
+          title: "Error saving template",
+          description: msg,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setTemplates((prev) => [t, ...prev]);
+      setNewTemplateName("");
+      setSelectedTemplateId(t.id);
+      setStatus("Template saved");
+
+      toast({
+        title: "Template saved",
+        description: `Template "${t.name}" is now available.`,
+      });
+    } catch (err: any) {
+      const msg = err?.message || "unknown";
+      setStatus(`Error saving template: ${msg}`);
+      toast({
+        title: "Error saving template",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingTemplate(false);
+    }
   }
 
   return (
