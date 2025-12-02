@@ -19,6 +19,13 @@ type AttachmentPayload = {
   mimeType: string;
 };
 
+// --------------------------------------------------------
+//   SAFE DELAY FUNCTION - prevents Resend rate-limit drop
+// --------------------------------------------------------
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
@@ -28,7 +35,7 @@ export async function POST(req: Request) {
     const payload = (await req.json()) as {
       segment: "individual" | "bulk";
       tier: "all" | "basic" | "silver" | "gold";
-      to?: string; // may contain MULTIPLE emails comma-separated
+      to?: string; // may contain MULTIPLE emails
       subject: string;
       body: string;
 
@@ -65,8 +72,7 @@ export async function POST(req: Request) {
     let recipients: string[] = [];
 
     // -----------------------------------------------------------
-    // ✅ INDIVIDUAL MODE — supports MULTI-SELECT
-    // to = "a@a.com,b@b.com,c@c.com"
+    // INDIVIDUAL MODE — supports MULTI-SELECT (comma separated)
     // -----------------------------------------------------------
     if (segment === "individual") {
       if (!to)
@@ -82,7 +88,7 @@ export async function POST(req: Request) {
     }
 
     // -----------------------------------------------------------
-    // ✅ BULK MODE — unchanged
+    // BULK MODE — unchanged
     // -----------------------------------------------------------
     else {
       const members = await prisma.member.findMany({
@@ -94,7 +100,7 @@ export async function POST(req: Request) {
     }
 
     // -----------------------------------------------------------
-    // ✅ Build Campaign Email HTML
+    // Build Campaign Email HTML
     // -----------------------------------------------------------
     const html = buildCampaignEmail({
       templateKey: templateKey || "classic",
@@ -110,7 +116,7 @@ export async function POST(req: Request) {
     });
 
     // -----------------------------------------------------------
-    // Attachments
+    // Prepare attachments
     // -----------------------------------------------------------
     const resendAttachments =
       attachments && attachments.length > 0
@@ -122,31 +128,35 @@ export async function POST(req: Request) {
         : undefined;
 
     // -----------------------------------------------------------
-    // SEND EMAIL(S)
+    // SEQUENTIAL SENDING ENGINE — FIXES DROPPED EMAILS
     // -----------------------------------------------------------
-    const results = await Promise.allSettled(
-      recipients.map((email) =>
-        resend.emails.send({
+    let successCount = 0;
+
+    for (const email of recipients) {
+      try {
+        await resend.emails.send({
           from: "The Globe in Pattaya <info@mail.theglobeasia.com>",
           to: email,
           subject,
           html,
           attachments: resendAttachments,
-        })
-      )
-    );
+        });
 
-    const successCount = results.filter((r) => r.status === "fulfilled").length;
+        successCount++;
+      } catch (err) {
+        console.error("Failed:", email, err);
+      }
+
+      // prevent rate limit silent-drop
+      await wait(350);
+    }
 
     // -----------------------------------------------------------
-    // LOG TO DATABASE
+    // Log into database
     // -----------------------------------------------------------
     await prisma.emailLog.create({
       data: {
-        to:
-          segment === "individual"
-            ? to || ""
-            : "bulk",
+        to: segment === "individual" ? to || "" : "bulk",
         subject,
         tier: tier.toUpperCase(),
         count: successCount,
